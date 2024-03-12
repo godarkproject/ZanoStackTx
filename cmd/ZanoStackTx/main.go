@@ -3,7 +3,8 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/read"
+	mongodb "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/read"
+	mongodb2 "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/update"
 	"io"
 	"log"
 	"net/http"
@@ -95,10 +96,10 @@ func main() {
 	for _, transfer := range data.Result.Transfers {
 		confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
 
-		if confirmations >= 10 && transfer.PaymentId != "" {
+		if confirmations >= 1 && transfer.PaymentId != "" {
 
 			// fetch user details
-			user, err := read.FetchUser(transfer.PaymentId)
+			user, err := mongodb.FetchUser(transfer.PaymentId)
 			if err != nil {
 				log.Println("user doesnt exist")
 			} else {
@@ -109,7 +110,7 @@ func main() {
 				}
 
 				if !slices.Contains(userTxHashes, transfer.TxHash) {
-					//	add tx to user in mongo
+					mongodb2.AddTx(transfer.TxHash, transfer.Amount, user.ID)
 				}
 			}
 		}

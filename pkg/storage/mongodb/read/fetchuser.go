@@ -1,4 +1,4 @@
-package read
+package mongodb
 
 import (
 	"context"
@@ -12,17 +12,17 @@ import (
 
 type ZanoDeposits struct {
 	TxHash string `bson:"tx_hash"`
-	Amount string `bson:"amount"`
+	Amount int64  `bson:"amount"`
 }
 
 type GameTransactions struct {
 	GameUuid string `bson:"game_uuid"`
-	Amount   string `bson:"amount"`
+	Amount   int64  `bson:"amount"`
 }
 
 type Withdrawals struct {
 	TxHash string `bson:"tx_hash"`
-	Amount string `bson:"amount"`
+	Amount int64  `bson:"amount"`
 }
 
 type User struct {
