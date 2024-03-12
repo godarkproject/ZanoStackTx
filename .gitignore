@@ -1,6 +1,23 @@
 # If you prefer the allow list template instead of the deny list, see community template:
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
-#
+
+# Jetbrains IDEs
+.idea
+
+# Vim
+*.swp
+*.swn
+*.swo
+
+# MacOS system file
+.DS_Store
+
+# Environment variable files
+*.env
+
+# PEM files
+*.pem
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -12,10 +29,29 @@
 *.test
 
 # Output of the go coverage tool, specifically when used with LiteIDE
+*.new
+*.old
 *.out
+# Database files
+*.db
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
 # Go workspace file
 go.work
+
+# Directories
+binaries/
+#storage/
+vendor/
+wallets/
+
+# files
+#simplewallet
+#zanod
+.env
+zanostack_tg_bot.txt
+
+# Config
+configs/
