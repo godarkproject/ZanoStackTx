@@ -99,7 +99,7 @@ func monitorTx() {
 		confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
 
 		if confirmations < 10 {
-			fmt.Printf("Transaction confirming for %d $ZANO.\n%d confirmations left.\n", transfer.Amount, 10-confirmations)
+			fmt.Printf("\nTransaction confirming for %d $ZANO.\n%d confirmations left.\n", transfer.Amount, 10-confirmations)
 		}
 
 		if confirmations >= 10 && transfer.PaymentId != "" {
