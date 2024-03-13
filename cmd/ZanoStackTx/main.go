@@ -132,6 +132,6 @@ func main() {
 	log.Println("Monitoring incoming transactions")
 	for {
 		monitorTx()
-		time.Sleep(10 * time.Second)
+		time.Sleep(60 * time.Second)
 	}
 }
