@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
 	mongodb "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/read"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -39,10 +38,8 @@ func AddTx(txHash string, amount int64, userId primitive.ObjectID) {
 	//update := bson.D{{"$set", bson.D{{"zano_deposits", ""}}}}
 	update := bson.M{"$push": bson.M{"zano_deposits": doc}}
 
-	result, err := coll.UpdateOne(context.TODO(), filter, update)
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(result)
 }

@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"slices"
+	"time"
 )
 
 type GetPaymentsRes struct {
@@ -59,7 +60,7 @@ type GetPaymentsRes struct {
 	} `json:"result"`
 }
 
-func main() {
+func monitorTx() {
 	jsonBody := `
 		{
 		  "jsonrpc": "2.0",
@@ -97,14 +98,15 @@ func main() {
 	for _, transfer := range data.Result.Transfers {
 		confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
 
+		if confirmations < 10 {
+			fmt.Printf("Transaction confirming for %d $ZANO.\n%d confirmations left.\n", transfer.Amount, 10-confirmations)
+		}
+
 		if confirmations >= 10 && transfer.PaymentId != "" {
 
 			// fetch user details
 			user, err := mongodb.FetchUser(transfer.PaymentId)
-			if err != nil {
-				log.Println("user doesnt exist")
-			} else {
-
+			if err == nil {
 				var userTxHashes []string
 				for _, hash := range user.ZanoDeposits {
 					userTxHashes = append(userTxHashes, hash.TxHash)
@@ -119,9 +121,17 @@ func main() {
 						panic(err)
 					}
 
-					fmt.Printf("balance updated: %v", updated)
+					fmt.Printf("balance updated: %\n", updated)
 				}
 			}
 		}
+	}
+}
+
+func main() {
+	log.Println("Monitoring incoming transactions")
+	for {
+		monitorTx()
+		time.Sleep(10 * time.Second)
 	}
 }
