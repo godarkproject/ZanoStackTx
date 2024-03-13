@@ -97,7 +97,7 @@ func main() {
 	for _, transfer := range data.Result.Transfers {
 		confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
 
-		if confirmations >= 1 && transfer.PaymentId != "" {
+		if confirmations >= 10 && transfer.PaymentId != "" {
 
 			// fetch user details
 			user, err := mongodb.FetchUser(transfer.PaymentId)
