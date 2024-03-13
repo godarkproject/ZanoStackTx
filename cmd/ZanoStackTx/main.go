@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	mongodb "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/read"
 	mongodb2 "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/update"
 	"io"
@@ -111,6 +112,14 @@ func main() {
 
 				if !slices.Contains(userTxHashes, transfer.TxHash) {
 					mongodb2.AddTx(transfer.TxHash, transfer.Amount, user.ID)
+
+					newBalance := user.Balance + transfer.Amount
+					updated, err := mongodb2.UpdateBalance(newBalance, user.ID)
+					if err != nil {
+						panic(err)
+					}
+
+					fmt.Printf("balance updated: %v", updated)
 				}
 			}
 		}

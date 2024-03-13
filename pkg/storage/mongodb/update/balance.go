@@ -2,8 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
-	mongodb "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/read"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,7 +9,7 @@ import (
 	"time"
 )
 
-func AddTx(txHash string, amount int64, userId primitive.ObjectID) {
+func UpdateBalance(balance int64, mongoId primitive.ObjectID) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -24,25 +22,16 @@ func AddTx(txHash string, amount int64, userId primitive.ObjectID) {
 	}()
 
 	coll := client.Database("zanostack").Collection("users")
-	id, err := primitive.ObjectIDFromHex(userId.Hex())
-	if err != nil {
-		panic(err)
-	}
-
+	id, _ := primitive.ObjectIDFromHex(mongoId.Hex())
 	filter := bson.D{{"_id", id}}
-
-	doc := mongodb.ZanoDeposits{
-		TxHash: txHash,
-		Amount: amount,
-	}
-
-	//update := bson.D{{"$set", bson.D{{"zano_deposits", ""}}}}
-	update := bson.M{"$push": bson.M{"zano_deposits": doc}}
-
-	result, err := coll.UpdateOne(context.TODO(), filter, update)
+	// Creates instructions to add the "avg_rating" field to documents
+	update := bson.D{{"$set", bson.D{{"balance", balance}}}}
+	// Updates the first document that has the specified "_id" value
+	_, err = coll.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
-		panic(err)
+		return false, err
 	}
 
-	fmt.Println(result)
+	return true, nil
+
 }
