@@ -76,7 +76,7 @@ func monitorTx() {
 		  }
 		}`
 
-	request, err := http.NewRequest("POST", "http://127.0.0.1:11212/json_rpc", bytes.NewBuffer([]byte(jsonBody)))
+	request, err := http.NewRequest("POST", "http://127.0.0.1:11214/json_rpc", bytes.NewBuffer([]byte(jsonBody)))
 	if err != nil {
 		log.Println("error 1 with wallet POST")
 	}
@@ -121,7 +121,7 @@ func monitorTx() {
 						panic(err)
 					}
 
-					fmt.Printf("balance updated: %\n", updated)
+					fmt.Printf("balance updated: %v \n", updated)
 				}
 			}
 		}
