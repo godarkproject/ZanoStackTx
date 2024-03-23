@@ -1,12 +1,16 @@
 package mongodb
 
 import (
+	_ "compress/zlib"
 	"context"
 	"errors"
+	"fmt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"log"
 	"time"
 )
 
@@ -41,16 +45,23 @@ type User struct {
 	Balance          int64              `bson:"balance"`
 }
 
-func FetchUser(paymentId string) (User, error) {
+func FetchUser(mongoUri string, paymentId string) (User, error) {
+	opts := options.Client().ApplyURI(fmt.Sprintf("%s?compressors=snappy,zlib,zstd", mongoUri))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI("mongodb://kekzploit:machinecodes@localhost:27017/"))
+	client, err := mongo.Connect(ctx, opts)
 
 	defer func() {
 		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
+	// If you wish to know if a MongoDB server has been found and connected to, use the Ping method:
+	ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if err = client.Ping(ctx, readpref.Primary()); err != nil {
+		log.Println("MongoDB server has not been found")
+	}
 
 	coll := client.Database("zanostack").Collection("users")
 	// Creates a query filter to match documents in which the "name" is

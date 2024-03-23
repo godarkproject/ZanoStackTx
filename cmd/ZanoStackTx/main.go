@@ -6,9 +6,13 @@ import (
 	"fmt"
 	mongodb "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/read"
 	mongodb2 "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/update"
+	"github.com/joho/godotenv"
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
+	"runtime"
 	"slices"
 	"time"
 )
@@ -60,7 +64,40 @@ type GetPaymentsRes struct {
 	} `json:"result"`
 }
 
+func clearScreen(name string, arg ...string) {
+	cmd := exec.Command(name, arg...)
+	cmd.Stdout = os.Stdout
+	cmd.Run()
+}
+
+func init() {
+
+	// clear screen
+	switch runtime.GOOS {
+	case "darwin":
+		clearScreen("clear")
+	case "linux":
+		clearScreen("clear")
+	case "windows":
+		clearScreen("cmd", "/c", "cls")
+	default:
+		clearScreen("clear")
+	}
+}
+
+func getEnvVar(key string) string {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return os.Getenv(key)
+}
+
 func monitorTx() {
+	// Access the loaded environment variables
+	mongoUri := getEnvVar("MONGO_URI_DEV")
+
 	jsonBody := `
 		{
 		  "jsonrpc": "2.0",
@@ -105,7 +142,7 @@ func monitorTx() {
 		if confirmations >= 10 && transfer.PaymentId != "" {
 
 			// fetch user details
-			user, err := mongodb.FetchUser(transfer.PaymentId)
+			user, err := mongodb.FetchUser(mongoUri, transfer.PaymentId)
 			if err == nil {
 				var userTxHashes []string
 				for _, hash := range user.ZanoDeposits {
@@ -113,10 +150,10 @@ func monitorTx() {
 				}
 
 				if !slices.Contains(userTxHashes, transfer.TxHash) {
-					mongodb2.AddTx(transfer.TxHash, transfer.Amount, user.ID)
+					mongodb2.AddTx(mongoUri, transfer.TxHash, transfer.Amount, user.ID)
 
 					newBalance := user.Balance + transfer.Amount
-					updated, err := mongodb2.UpdateBalance(newBalance, user.ID)
+					updated, err := mongodb2.UpdateBalance(mongoUri, newBalance, user.ID)
 					if err != nil {
 						panic(err)
 					}
