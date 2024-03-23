@@ -135,11 +135,11 @@ func monitorTx() {
 	for _, transfer := range data.Result.Transfers {
 		confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
 
-		if confirmations < 10 {
+		if confirmations < 10 && transfer.IsIncome {
 			fmt.Printf("\nTransaction confirming for %d $ZANO.\n%d confirmations left.\n", transfer.Amount, 10-confirmations)
 		}
 
-		if confirmations >= 10 && transfer.PaymentId != "" {
+		if confirmations >= 10 && transfer.PaymentId != "" && transfer.IsIncome {
 
 			// fetch user details
 			user, err := mongodb.FetchUser(mongoUri, transfer.PaymentId)
