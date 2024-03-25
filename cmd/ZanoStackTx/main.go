@@ -23,11 +23,11 @@ type GetPaymentsRes struct {
 	Result  struct {
 		LastItemIndex int `json:"last_item_index"`
 		Pi            struct {
-			Balance              int64 `json:"balance"`
-			CurentHeight         int   `json:"curent_height"`
-			TransferEntriesCount int   `json:"transfer_entries_count"`
-			TransfersCount       int   `json:"transfers_count"`
-			UnlockedBalance      int   `json:"unlocked_balance"`
+			Balance              int `json:"balance"`
+			CurentHeight         int `json:"curent_height"`
+			TransferEntriesCount int `json:"transfer_entries_count"`
+			TransfersCount       int `json:"transfers_count"`
+			UnlockedBalance      int `json:"unlocked_balance"`
 		} `json:"pi"`
 		TotalTransfers int `json:"total_transfers"`
 		Transfers      []struct {
@@ -38,7 +38,12 @@ type GetPaymentsRes struct {
 					Amount  int64  `json:"amount"`
 					AssetId string `json:"asset_id"`
 					Index   int    `json:"index"`
-				} `json:"receive"`
+				} `json:"receive,omitempty"`
+				Spent []struct {
+					Amount  int64  `json:"amount"`
+					AssetId string `json:"asset_id"`
+					Index   int    `json:"index"`
+				} `json:"spent,omitempty"`
 			} `json:"employed_entries"`
 			Fee             int64    `json:"fee"`
 			Height          int      `json:"height"`
@@ -47,7 +52,8 @@ type GetPaymentsRes struct {
 			IsMixing        bool     `json:"is_mixing"`
 			IsService       bool     `json:"is_service"`
 			PaymentId       string   `json:"payment_id"`
-			RemoteAddresses []string `json:"remote_addresses"`
+			RemoteAddresses []string `json:"remote_addresses,omitempty"`
+			RemoteAliases   []string `json:"remote_aliases,omitempty"`
 			ShowSender      bool     `json:"show_sender"`
 			Subtransfers    []struct {
 				Amount   int64  `json:"amount"`
@@ -60,6 +66,12 @@ type GetPaymentsRes struct {
 			TxHash                string `json:"tx_hash"`
 			TxType                int    `json:"tx_type"`
 			UnlockTime            int    `json:"unlock_time"`
+			ServiceEntries        []struct {
+				Body        string `json:"body"`
+				Flags       int    `json:"flags"`
+				Instruction string `json:"instruction"`
+				ServiceId   string `json:"service_id"`
+			} `json:"service_entries,omitempty"`
 		} `json:"transfers"`
 	} `json:"result"`
 }
@@ -133,32 +145,34 @@ func monitorTx() {
 	_ = json.Unmarshal(body, &data)
 
 	for _, transfer := range data.Result.Transfers {
-		confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
+		if transfer.Amount > 0 {
+			confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
 
-		if confirmations < 10 && transfer.IsIncome {
-			fmt.Printf("\nTransaction confirming for %d $ZANO.\n%d confirmations left.\n", transfer.Amount, 10-confirmations)
-		}
+			if confirmations < 10 && transfer.PaymentId != "" && transfer.IsIncome {
+				fmt.Printf("\nTransaction confirming for %d $ZANO.\n%d confirmations left.\n", transfer.Amount, 10-confirmations)
+			}
 
-		if confirmations >= 10 && transfer.PaymentId != "" && transfer.IsIncome {
+			if confirmations >= 10 && transfer.PaymentId != "" && transfer.IsIncome {
 
-			// fetch user details
-			user, err := mongodb.FetchUser(mongoUri, transfer.PaymentId)
-			if err == nil {
-				var userTxHashes []string
-				for _, hash := range user.ZanoDeposits {
-					userTxHashes = append(userTxHashes, hash.TxHash)
-				}
-
-				if !slices.Contains(userTxHashes, transfer.TxHash) {
-					mongodb2.AddTx(mongoUri, transfer.TxHash, transfer.Amount, user.ID)
-
-					newBalance := user.Balance + transfer.Amount
-					updated, err := mongodb2.UpdateBalance(mongoUri, newBalance, user.ID)
-					if err != nil {
-						panic(err)
+				// fetch user details
+				user, err := mongodb.FetchUser(mongoUri, transfer.PaymentId)
+				if err == nil {
+					var userTxHashes []string
+					for _, hash := range user.ZanoDeposits {
+						userTxHashes = append(userTxHashes, hash.TxHash)
 					}
 
-					fmt.Printf("balance updated: %v \n", updated)
+					if !slices.Contains(userTxHashes, transfer.TxHash) {
+						mongodb2.AddTx(mongoUri, transfer.TxHash, transfer.Amount, user.ID)
+
+						newBalance := user.Balance + transfer.Amount
+						updated, err := mongodb2.UpdateBalance(mongoUri, newBalance, user.ID)
+						if err != nil {
+							panic(err)
+						}
+
+						fmt.Printf("balance updated: %v \n", updated)
+					}
 				}
 			}
 		}
