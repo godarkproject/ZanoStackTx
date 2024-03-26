@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	mongodb "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/read"
 	mongodb2 "github.com/godarkproject/ZanoStackTx/pkg/storage/mongodb/update"
 	"github.com/joho/godotenv"
@@ -23,39 +22,38 @@ type GetPaymentsRes struct {
 	Result  struct {
 		LastItemIndex int `json:"last_item_index"`
 		Pi            struct {
-			Balance              int `json:"balance"`
-			CurentHeight         int `json:"curent_height"`
-			TransferEntriesCount int `json:"transfer_entries_count"`
-			TransfersCount       int `json:"transfers_count"`
-			UnlockedBalance      int `json:"unlocked_balance"`
+			Balance              int64 `json:"balance"`
+			CurentHeight         int   `json:"curent_height"`
+			TransferEntriesCount int   `json:"transfer_entries_count"`
+			TransfersCount       int   `json:"transfers_count"`
+			UnlockedBalance      int64 `json:"unlocked_balance"`
 		} `json:"pi"`
 		TotalTransfers int `json:"total_transfers"`
 		Transfers      []struct {
 			Amount          int64  `json:"amount"`
 			Comment         string `json:"comment"`
 			EmployedEntries struct {
-				Spent []struct {
-					Amount  int64  `json:"amount"`
-					AssetId string `json:"asset_id"`
-					Index   int    `json:"index"`
-				} `json:"spent,omitempty"`
 				Receive []struct {
 					Amount  int64  `json:"amount"`
 					AssetId string `json:"asset_id"`
 					Index   int    `json:"index"`
-				} `json:"receive,omitempty"`
+				} `json:"receive"`
 			} `json:"employed_entries"`
-			Fee             int64    `json:"fee"`
-			Height          int      `json:"height"`
-			IsIncome        bool     `json:"is_income"`
-			IsMining        bool     `json:"is_mining"`
-			IsMixing        bool     `json:"is_mixing"`
-			IsService       bool     `json:"is_service"`
-			PaymentId       string   `json:"payment_id"`
-			RemoteAddresses []string `json:"remote_addresses"`
-			RemoteAliases   []string `json:"remote_aliases"`
-			ShowSender      bool     `json:"show_sender"`
-			Subtransfers    []struct {
+			Fee            int64  `json:"fee"`
+			Height         int    `json:"height"`
+			IsIncome       bool   `json:"is_income"`
+			IsMining       bool   `json:"is_mining"`
+			IsMixing       bool   `json:"is_mixing"`
+			IsService      bool   `json:"is_service"`
+			PaymentId      string `json:"payment_id"`
+			ServiceEntries []struct {
+				Body        string `json:"body"`
+				Flags       int    `json:"flags"`
+				Instruction string `json:"instruction"`
+				ServiceId   string `json:"service_id"`
+			} `json:"service_entries"`
+			ShowSender   bool `json:"show_sender"`
+			Subtransfers []struct {
 				Amount   int64  `json:"amount"`
 				AssetId  string `json:"asset_id"`
 				IsIncome bool   `json:"is_income"`
@@ -115,7 +113,7 @@ func monitorTx() {
 			"exclude_mining_txs": true,
 			"count": 100,
 			"order": "FROM_END_TO_BEGIN",
-			"exclude_unconfirmed": true
+			"exclude_unconfirmed": false
 		  }
 		}`
 
@@ -141,8 +139,10 @@ func monitorTx() {
 	for _, transfer := range data.Result.Transfers {
 		confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
 
+		log.Println(transfer.TxHash)
+
 		if confirmations < 10 && transfer.PaymentId != "" && transfer.IsIncome {
-			fmt.Printf("\nTransaction confirming for %d $ZANO.\n%d confirmations left.\n", transfer.Amount, 10-confirmations)
+			log.Printf("Transaction confirming for %d $ZANO, %d confirmations left.\n", transfer.Height, 10-confirmations)
 		}
 
 		if confirmations >= 10 && transfer.PaymentId != "" && transfer.IsIncome {
@@ -164,8 +164,10 @@ func monitorTx() {
 						panic(err)
 					}
 
-					fmt.Printf("balance updated: %v \n", updated)
+					log.Printf("balance updated: %v \n", updated)
 				}
+			} else {
+				log.Println("no user exists with payment id")
 			}
 		}
 
