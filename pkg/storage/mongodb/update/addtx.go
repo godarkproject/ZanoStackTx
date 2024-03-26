@@ -15,6 +15,7 @@ import (
 )
 
 func AddTx(mongoUri string, txHash string, amount int64, userId primitive.ObjectID) {
+	fmt.Printf("in add tx")
 	opts := options.Client().ApplyURI(fmt.Sprintf("%s?compressors=snappy,zlib,zstd", mongoUri))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

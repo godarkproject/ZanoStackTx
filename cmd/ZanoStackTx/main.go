@@ -100,7 +100,7 @@ func getEnvVar(key string) string {
 
 func monitorTx() {
 	// Access the loaded environment variables
-	mongoUri := getEnvVar("MONGO_URI_DEV")
+	mongoUri := getEnvVar("MONGO_URI_PROD")
 
 	jsonBody := `
 		{
@@ -113,7 +113,7 @@ func monitorTx() {
 			"exclude_mining_txs": true,
 			"count": 100,
 			"order": "FROM_END_TO_BEGIN",
-			"exclude_unconfirmed": false
+			"exclude_unconfirmed": true
 		  }
 		}`
 
@@ -137,41 +137,33 @@ func monitorTx() {
 	_ = json.Unmarshal(body, &data)
 
 	for _, transfer := range data.Result.Transfers {
-		confirmations := int64(data.Result.Pi.CurentHeight) - int64(transfer.Height)
 
-		log.Println(transfer.TxHash)
+		log.Println(transfer)
 
-		if confirmations < 10 && transfer.PaymentId != "" && transfer.IsIncome {
-			log.Printf("Transaction confirming for %d $ZANO, %d confirmations left.\n", transfer.Height, 10-confirmations)
-		}
-
-		if confirmations >= 10 && transfer.PaymentId != "" && transfer.IsIncome {
-
-			// fetch user details
-			user, err := mongodb.FetchUser(mongoUri, transfer.PaymentId)
-			if err == nil {
-				var userTxHashes []string
-				for _, hash := range user.ZanoDeposits {
-					userTxHashes = append(userTxHashes, hash.TxHash)
-				}
-
-				if !slices.Contains(userTxHashes, transfer.TxHash) {
-					mongodb2.AddTx(mongoUri, transfer.TxHash, transfer.Amount, user.ID)
-
-					newBalance := user.Balance + transfer.Amount
-					updated, err := mongodb2.UpdateBalance(mongoUri, newBalance, user.ID)
-					if err != nil {
-						panic(err)
-					}
-
-					log.Printf("balance updated: %v \n", updated)
-				}
-			} else {
-				log.Println("no user exists with payment id")
+		// fetch user details
+		user, err := mongodb.FetchUser(mongoUri, transfer.PaymentId)
+		if err == nil {
+			var userTxHashes []string
+			for _, hash := range user.ZanoDeposits {
+				userTxHashes = append(userTxHashes, hash.TxHash)
 			}
-		}
 
+			if !slices.Contains(userTxHashes, transfer.TxHash) {
+				mongodb2.AddTx(mongoUri, transfer.TxHash, transfer.Amount, user.ID)
+
+				newBalance := user.Balance + transfer.Amount
+				updated, err := mongodb2.UpdateBalance(mongoUri, newBalance, user.ID)
+				if err != nil {
+					panic(err)
+				}
+
+				log.Printf("balance updated: %v \n", updated)
+			}
+		} else {
+			log.Println("no user exists with payment id")
+		}
 	}
+
 }
 
 func main() {

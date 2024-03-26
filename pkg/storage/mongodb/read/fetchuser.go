@@ -46,6 +46,7 @@ type User struct {
 }
 
 func FetchUser(mongoUri string, paymentId string) (User, error) {
+	fmt.Printf("fetching user")
 	opts := options.Client().ApplyURI(fmt.Sprintf("%s?compressors=snappy,zlib,zstd", mongoUri))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
