@@ -100,7 +100,7 @@ func getEnvVar(key string) string {
 
 func monitorTx() {
 	// Access the loaded environment variables
-	mongoUri := getEnvVar("MONGO_URI_PROD")
+	mongoUri := getEnvVar("MONGO_URI_DEV")
 
 	jsonBody := `
 		{
